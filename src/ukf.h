@@ -31,6 +31,10 @@ public:
   ///* predicted sigma points matrix
   MatrixXd Xsig_pred_;
 
+  ///* predicted covariance matrix // DEBUG
+  // MatrixXd P_pred_;
+  // MatrixXd x_pred_;
+
   ///* time when the state is true, in us
   long long time_us_;
 
@@ -77,6 +81,12 @@ public:
    * Destructor
    */
   virtual ~UKF();
+
+  /**
+   * x_P_Initialization
+   * Function which is called once at the beginning.
+   */
+  void x_P_Initialization(MeasurementPackage meas_package);
 
   /**
    * ProcessMeasurement
