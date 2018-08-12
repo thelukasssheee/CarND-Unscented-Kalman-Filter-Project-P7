@@ -66,10 +66,14 @@ UKF::UKF() {
   // Sigma point spreading parameter
   lambda_ = 3 - n_aug_;
 
-  // Initialize weight vector TODO
+  // Initialize weight vector for augmented state
   weights_ = VectorXd(2*n_aug_ + 1);
   weights_.fill(0.5/(lambda_ + n_aug_));
   weights_(0) *= 2*lambda_;
+
+  // Initialize NIS values
+  NIS_radar_ = 0.;
+  NIS_lidar_ = 0.;
 }
 
 UKF::~UKF() {}
@@ -185,11 +189,25 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
  */
 void UKF::Prediction(double delta_t) {
   // GENERATE SIGMA POINTS
+  lambda_ = 3 - n_x_;  // Define spreading parameter lambda
+
+  //calculate square root matrix A
+  MatrixXd A = P_.llt().matrixL();
+
+  MatrixXd Xsig = MatrixXd(n_x_,2*n_x_+1);
+  Xsig.col(0) = x_;
+  for (int j = 0; j < n_x_; j++) {
+    Xsig.col(j+1)         = x_ + A.col(j)*sqrt(lambda_ + n_x_);
+    Xsig.col(j+1+n_x_)    = x_ - A.col(j)*sqrt(lambda_ + n_x_);
+  }
+
+  // GENERATE AUGMENTED SIGMA POINTS (INCLUDING PROCESS NOISE)
+  lambda_ = 3 - n_aug_;
   // 1st: Create augmented mean vector
   VectorXd x_aug = VectorXd(n_aug_);
   x_aug.head(n_x_) = x_;
-  x_aug(5) = 0.;
-  x_aug(6) = 0.;
+  x_aug(5) = 0.; // mean process noise = 0.0
+  x_aug(6) = 0.; // mean process noise = 0.0
   // 2nd: Create augmented state covariance matrix
   MatrixXd P_aug = MatrixXd(n_aug_,n_aug_);
   P_aug.fill(0.0);
@@ -272,14 +290,8 @@ void UKF::Prediction(double delta_t) {
  * @param {MeasurementPackage} meas_package
  */
 void UKF::UpdateLidar(MeasurementPackage meas_package) {
-  /**
-  TODO:
+  
 
-  Complete this function! Use lidar data to update the belief about the object's
-  position. Modify the state vector, x_, and covariance, P_.
-
-  You'll also need to calculate the lidar NIS.
-  */
 }
 
 /**
@@ -309,25 +321,26 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
     // Calculate rho dot
     double rhod = v*(px*cos(yaw) + py*sin(yaw)) / rho;
     // Write back to Zsig
-    Zsig_pred.col(i) <<  rho,
-                    phi,
-                    rhod;
+    Zsig_pred.col(i) <<   rho,
+                          phi,
+                          rhod;
   }
-  // 3rd: Define and initialize variables
-  MatrixXd S = MatrixXd(n_z,n_z);
-  S.fill(0.0);
+  // 3rd: Predict vector z
   VectorXd z_pred = VectorXd(n_z);
   z_pred.fill(0.0);
   for (int i = 0; i < n_z; i++) {
     z_pred.row(i) = Zsig_pred.row(i) * weights_;
   }
   // 4th: Calculate innovation covariance matrix S
+  MatrixXd S = MatrixXd(n_z,n_z);
+  S.fill(0.0);
   for (int i = 0; i < 2*n_aug_+1; i++) {
-    VectorXd z_diff = VectorXd(n_z);
-    z_diff = Zsig_pred.col(i) - z_pred;
+    VectorXd z_diff = Zsig_pred.col(i) - z_pred;
+    while (z_diff(1) >  M_PI) z_diff(1) -= 2.*M_PI;
+    while (z_diff(1) < -M_PI) z_diff(1) += 2.*M_PI;
     S += weights_(i) * z_diff * z_diff.transpose();
   }
-  // 5th: Calculate measurement noise covariance matrix
+  // 5th: Calculate measurement noise covariance matrix R
   MatrixXd R = MatrixXd(n_z,n_z);
   R <<  std_radr_*std_radr_,  0,                        0,
         0,                    std_radphi_*std_radphi_,  0,
@@ -367,7 +380,9 @@ void UKF::UpdateRadar(MeasurementPackage meas_package) {
   x_ +=  K * z_diff;
   P_ += -K * S * K.transpose();
 
-  // CALCULATE RADAR NIS TODO
+  // CALCULATE RADAR NIS
+  NIS_radar_ = z_diff.transpose() * S.inverse() * z_diff;
+
 
 
   // cout << "DEBUG = " << endl << Xsig_pred_ << endl;
