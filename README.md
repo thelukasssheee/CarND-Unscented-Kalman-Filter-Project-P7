@@ -40,7 +40,7 @@ OUTPUT: values provided by the c++ program to the simulator
 
 ---
 ## Youtube Video Clip of Solution
-Michael Berner's [result as Youtube clip](https://github.com/udacity/self-driving-car-sim/releases) of 
+Michael Berner's [result as Youtube clip](https://youtu.be/Yj73l-NkLXE).
 
 
 ## Other Important Dependencies
