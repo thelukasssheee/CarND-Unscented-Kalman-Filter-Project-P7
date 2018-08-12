@@ -24,7 +24,7 @@ VectorXd Tools::CalculateRMSE(const vector<VectorXd> &estimations,
   }
 
   // Calculate squared residuals
-  for (unsigned int j=1; j < estimations.size(); ++j) {
+  for (unsigned int j=0; j < estimations.size(); ++j) {
     // Calculate
     VectorXd resid = estimations[j] - ground_truth[j];
 
