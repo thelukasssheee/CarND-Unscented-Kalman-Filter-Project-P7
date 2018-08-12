@@ -18,11 +18,17 @@ UKF::UKF() {
   // if this is false, radar measurements will be ignored (except during init)
   use_radar_ = true;
 
+  // Initialization status
+  is_initialized_ = false;
+
   // initial state vector
   x_ = VectorXd(5);
 
   // initial covariance matrix
   P_ = MatrixXd(5, 5);
+
+  // Predicted sigma points matrix
+  Xsig_pred_ = MatrixXd(5, 15); // TODO: dimension correct? or rather 15x5?
 
   // Process noise standard deviation longitudinal acceleration in m/s^2
   std_a_ = 30;
@@ -81,6 +87,77 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   Complete this function! Make sure you switch between lidar and radar
   measurements.
   */
+  /*****************************************************************************
+   *  Initialization
+   ****************************************************************************/
+
+  if (!is_initialized_) {
+    /**
+      * Initialize the state ekf_.x_ with the first measurement.  DONE
+      * Create the covariance matrix.
+      * Remember: you'll need to convert radar from polar to cartesian coordinates.
+    */
+    // Create UKF() instance as ukf
+    // first measurement
+    cout << "UKF: " << endl;
+    x_ = VectorXd(5);
+    x_ << 0., 0., 0., 0., 0.;
+
+    // Remember timestamp of first measurements
+    time_us_ = meas_package.timestamp_;
+
+    // P initialization: covariance matrix
+    // moderate value for position x,y
+    // high value for v, yaw, yawrate
+    P_ = MatrixXd(5,5);
+    P_ <<   1,  0,  0,    0,    0,
+            0,  1,  0,    0,    0,
+            0,  0,  1000, 0,    0,
+            0,  0,  0,    1000, 0,
+            0,  0,  0,    0,    1000;
+
+    /** TODO: check if necessary
+    // F initialization: state-transition model
+    // Do not take speed into consideration
+    ekf_.F_ = MatrixXd(4,4);
+    ekf_.F_ <<  1,  0,  0,  0,
+                0,  1,  0,  0,
+                0,  0,  1,  0,
+                0,  0,  0,  1;
+
+    // Q initialization: covariance process noise
+    //
+    ekf_.Q_ = MatrixXd(4,4);
+    **/
+
+    // Initialize state-vector x with first measurement
+    if (meas_package.sensor_type_ == MeasurementPackage::RADAR) {
+      /**
+      Convert radar from polar to cartesian coordinates and initialize state.
+      **/
+      float rho = meas_package.raw_measurements_(0);
+      float phi = meas_package.raw_measurements_(1);
+      x_(0) = rho     * cos(phi);
+      x_(1) = rho     * sin(phi);
+      /**
+      float rho_dot = meas_package.raw_measurements_(2);
+      ukf.x_(2) = rho_dot * cos(phi);
+      ukf.x_(3) = rho_dot * sin(phi);
+      ukf.x_(4) = rho_dot * sin(phi);
+      **/
+    }
+    else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
+      /**
+      Initialize state.
+      */
+      x_(0) = meas_package.raw_measurements_(0);
+      x_(1) = meas_package.raw_measurements_(1);
+    }
+
+    // done initializing, no need to predict or update
+    is_initialized_ = true;
+    return;
+  }
 }
 
 /**

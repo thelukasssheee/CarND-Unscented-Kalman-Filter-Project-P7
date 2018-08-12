@@ -102,6 +102,11 @@ public:
    * @param meas_package The measurement at k+1
    */
   void UpdateRadar(MeasurementPackage meas_package);
+
+  /**
+   * Define Kalman filter function
+  UKF ukf;
+  */
 };
 
 #endif /* UKF_H */
