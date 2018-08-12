@@ -98,15 +98,15 @@ UKF::~UKF() {}
     double rhodot = meas_package.raw_measurements_(2);
     x_(0) = rho     * cos(phi);
     x_(1) = rho     * sin(phi);
-    x_(2) = 4; // v can be tuned
-    x_(3) = rhodot  * cos(phi);
-    x_(4) = rhodot  * sin(phi);
+    x_(2) = 0; // v can be tuned
+    x_(3) = 0*rhodot  * cos(phi);
+    x_(4) = 0*rhodot  * sin(phi);
 
     P_ <<   std_radr_*std_radr_,  0,  0,    0,    0,
             0,  std_radr_*std_radr_,  0,    0,    0,
-            0,  0,  1, 0,    0,
-            0,  0,  0, std_radphi_*std_radphi_, 0,
-            0,  0,  0,    0,    std_radrd_*std_radrd_;
+            0,  0,  10, 0,    0,
+            0,  0,  0, 10*std_radphi_*std_radphi_, 0,
+            0,  0,  0,    0,    10*std_radrd_*std_radrd_;
   }
   else if (meas_package.sensor_type_ == MeasurementPackage::LASER) {
     /**
@@ -114,15 +114,15 @@ UKF::~UKF() {}
     */
     x_(0) = meas_package.raw_measurements_(0);
     x_(1) = meas_package.raw_measurements_(1);
-    x_(2) = 4; // v can be tuned
-    x_(3) = 0.5; // yaw can be tuned
-    x_(4) = 0; // yaw rate can be tuned
+    x_(2) = 0.; //4; // v can be tuned
+    x_(3) = 0.; //0.5; // yaw can be tuned
+    x_(4) = 0.; // yaw rate can be tuned
 
     P_ <<   std_laspx_*std_laspx_,  0,  0,    0,    0,
             0,  std_laspy_*std_laspy_,  0,    0,    0,
-            0,  0,                      1,    0,    0,
-            0,  0,                      0,    1,    0,
-            0,  0,                      0,    0,    1;
+            0,  0,                      100,    0,    0,
+            0,  0,                      0,    100,    0,
+            0,  0,                      0,    0,    100;
   }
 
   // done initializing, no need to predict or update
@@ -149,8 +149,9 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
     cout << "P_ init = " << endl << P_ << endl;
     return;
   }
+
   /*****************************************************************************
-  *  Prediction TODO
+  *  Prediction
   *****************************************************************************/
   // Call prediction
   double delta_t = (meas_package.timestamp_ - time_us_) * 0.000001;
@@ -159,10 +160,8 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   cout << "x_ predicted = " << endl << x_ << endl;
   cout << "P_ predicted = " << endl << P_ << endl;
 
-
-
   /*****************************************************************************
-  *  Update TODO
+  *  Update
   *****************************************************************************/
   // Call update
   if ((meas_package.sensor_type_ == MeasurementPackage::RADAR) & use_radar_) {
@@ -177,7 +176,6 @@ void UKF::ProcessMeasurement(MeasurementPackage meas_package) {
   // print the output
   cout << "x_ = " << endl << x_ << endl;
   cout << "P_ = " << endl << P_ << endl;
-
 }
 
 /**
